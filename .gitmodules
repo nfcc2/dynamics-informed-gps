@@ -1,0 +1,4 @@
+[submodule "Stone-Soup"]
+	path = Stone-Soup
+	url = https://github.com/nfcc2/Stone-Soup.git
+	branch = fusion
