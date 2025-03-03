@@ -119,9 +119,9 @@ if __name__ == "__main__":
     start_time = datetime.now()
 
     model_params_combined = {**common_model_params, **generating_model_params[generating_model]}
-    iDSE = initialise_transition_model(generating_model, **model_params_combined)
-    prior = create_prior_state(iDSE, start_time, np.random.rand(), np.random.rand(), noise_var)
-    gt_x, gt_y = generate_synthetic_ground_truth(iDSE, prior, 100, time_interval)
+    transition_model_gen = initialise_transition_model(generating_model, **model_params_combined)
+    prior = create_prior_state(transition_model_gen, start_time, np.random.rand(), np.random.rand(), noise_var)
+    gt_x, gt_y = generate_synthetic_ground_truth(transition_model_gen, prior, 100, time_interval)
     meas_x, meas_y = simulate_gaussian_measurements(gt_x, gt_y, noise_sd)
 
     # Plot ground truth and measurements
