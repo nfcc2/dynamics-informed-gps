@@ -39,79 +39,17 @@ common_model_params = {
 }
 
 generating_model_params = {
-    # iSE model
-    "iSE": {
-        "kernel_params": {
-            "length_scale": 2,
-            "kernel_variance": 1
-        }
-    },
-
-    # iDSE model
-    "iDSE": {
-        "kernel_params": {
-            "length_scale": 2,
-            "kernel_variance": 1
-        },
-        "dynamics_coeff": -0.2,
-        "gp_coeff": 1
-    },
-
-    # iiSE model
-    "iiSE": {
-        "kernel_params": {
-            "length_scale": 2,
-            "kernel_variance": 1
-        }
-    },
-
-    # iiDSE model
-    "iiDSE": {
-        "kernel_params": {
-            "length_scale": 2,
-            "kernel_variance": 1
-        },
-        "dynamics_coeff": -0.2,
-        "gp_coeff": 1
-    }
+    "iSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
+    "iDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}, "dynamics_coeff": -0.2, "gp_coeff": 1},
+    "iiSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
+    "iiDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}, "dynamics_coeff": -0.2, "gp_coeff": 1}
 }
 
 tracking_model_params = {
-    # iSE model
-    "iSE": {
-        "kernel_params": {
-            "length_scale": 2,
-            "kernel_variance": 1
-        }
-    },
-
-    # iDSE model
-    "iDSE": {
-        "kernel_params": {
-            "length_scale": 2,
-            "kernel_variance": 1
-        },
-        "dynamics_coeff": -0.2,
-        "gp_coeff": 1
-    },
-
-    # iiSE model
-    "iiSE": {
-        "kernel_params": {
-            "length_scale": 0.5,
-            "kernel_variance": 5
-        }
-    },
-
-    # iiDSE model
-    "iiDSE": {
-        "kernel_params": {
-            "length_scale": 0.5,
-            "kernel_variance": 5
-        },
-        "dynamics_coeff": -1,
-        "gp_coeff": 1
-    }
+    "iSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
+    "iDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}, "dynamics_coeff": -0.2, "gp_coeff": 1},
+    "iiSE": {"kernel_params": {"length_scale": 0.5, "kernel_variance": 5}},
+    "iiDSE": {"kernel_params": {"length_scale": 0.5, "kernel_variance": 5}, "dynamics_coeff": -1, "gp_coeff": 1}
 }
 
 if __name__ == "__main__":
