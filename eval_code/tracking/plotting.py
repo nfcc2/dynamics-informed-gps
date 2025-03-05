@@ -10,19 +10,19 @@ from scipy.stats import norm
 
 
 model_abbreviations = {
-    "SlidingWindowGPSE": "SE",
-    "IntegratedGPSE": "iSE",
-    "TwiceIntegratedGPSE": "iiSE",
-    "DynamicsInformedIntegratedGPSE": "iDSE",
-    "DynamicsInformedTwiceIntegratedGPSE": "iiDSE"
+    "SlidingWindowGP": "SE",
+    "IntegratedGP": "iSE",
+    "TwiceIntegratedGP": "iiSE",
+    "DynamicsInformedIntegratedGP": "iDSE",
+    "DynamicsInformedTwiceIntegratedGP": "iiDSE"
 }
 
 model_colors = {
-    "SlidingWindowGPSE": "limegreen", 
-    "IntegratedGPSE": "mediumorchid", 
-    "TwiceIntegratedGPSE": "coral", 
-    "DynamicsInformedIntegratedGPSE": "gold", 
-    "DynamicsInformedTwiceIntegratedGPSE": "skyblue"
+    "SlidingWindowGP": "limegreen", 
+    "IntegratedGP": "mediumorchid", 
+    "TwiceIntegratedGP": "coral", 
+    "DynamicsInformedIntegratedGP": "gold", 
+    "DynamicsInformedTwiceIntegratedGP": "skyblue"
 }
 
 

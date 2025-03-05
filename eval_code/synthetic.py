@@ -18,14 +18,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # define params
-generating_model = "iDSE"
+generating_model = "iiSE"
 tracking_models = ["iSE", "iDSE", "iiSE", "iiDSE"]
 
 time_interval = timedelta(seconds=0.1)
 num_steps = 100
 
 # Simulated Gaussian noise standard deviation and variance
-noise_sd = 0.1
+noise_sd = 0.5 # 0.1 for iDSE
 noise_var = noise_sd ** 2
 
 # Colours for visualisation
@@ -39,6 +39,7 @@ common_model_params = {
 }
 
 generating_model_params = {
+    "SE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
     "iSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
     "iDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}, "dynamics_coeff": -0.2, "gp_coeff": 1},
     "iiSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
@@ -48,20 +49,19 @@ generating_model_params = {
 tracking_model_params = {
     "iSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
     "iDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}, "dynamics_coeff": -0.2, "gp_coeff": 1},
-    "iiSE": {"kernel_params": {"length_scale": 0.5, "kernel_variance": 5}},
-    "iiDSE": {"kernel_params": {"length_scale": 0.5, "kernel_variance": 5}, "dynamics_coeff": -1, "gp_coeff": 1}
+    "iiSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 3.4}},
+    "iiDSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 3.4}, "dynamics_coeff": -0.6, "gp_coeff": 1}
 }
 
 if __name__ == "__main__":
-    np.random.seed(2)
+    np.random.seed(5)
     start_time = datetime.now()
 
     model_params_combined = {**common_model_params, **generating_model_params[generating_model]}
     transition_model_gen = initialise_transition_model(generating_model, **model_params_combined)
     prior = create_prior_state(transition_model_gen, start_time, np.random.rand(), np.random.rand(), noise_var)
-    gt_x, gt_y = generate_synthetic_ground_truth(transition_model_gen, prior, 100, time_interval)
+    gt_x, gt_y = generate_synthetic_ground_truth(transition_model_gen, prior, num_steps, time_interval)
     meas_x, meas_y = simulate_gaussian_measurements(gt_x, gt_y, noise_sd)
-
     # Plot ground truth and measurements
     plot_base(gt_x, gt_y, meas_x, meas_y)
 

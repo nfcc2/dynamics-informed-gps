@@ -5,8 +5,6 @@ from tracking.models_utils import get_model_properties
 from stonesoup.types.groundtruth import GroundTruthPath, GroundTruthState
 from stonesoup.types.detection import Detection
 from stonesoup.types.state import GaussianState
-from stonesoup.models.transition.linear import SlidingWindowGPSE
-
 import datetime
 import numpy as np
 from scipy.stats import multivariate_normal
