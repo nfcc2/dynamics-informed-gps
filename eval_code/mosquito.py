@@ -34,11 +34,11 @@ common_model_params = {
 }
 
 tracking_model_params = {
-    "SE": {"kernel_params": {"length_scale": 0.5, "kernel_variance": 0.5}},
-    "iSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.05}},
+    "SE": {"kernel_params": {"length_scale": 0.3, "kernel_variance": 0.03}},
+    "iSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.1}},
     "iDSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.1}, "dynamics_coeff": -0.3, "gp_coeff": 1},
-    "iiSE": {"kernel_params": {"length_scale": 0.05, "kernel_variance": 1}},
-    "iiDSE": {"kernel_params": {"length_scale": 0.05, "kernel_variance": 1}, "dynamics_coeff": -0.5, "gp_coeff": 1}
+    "iiSE": {"kernel_params": {"length_scale": 0.06, "kernel_variance": 3}},
+    "iiDSE": {"kernel_params": {"length_scale": 0.06, "kernel_variance": 3}, "dynamics_coeff": -0.9, "gp_coeff": 1}
 }
 
 if __name__ == "__main__":
