@@ -1,7 +1,7 @@
 # dynamics-informed-gps
-Code used in "Dynamics-informed Gaussian Process models within Stone Soup" paper
+Code used in "Dynamics-Informed Gaussian Process models in Stone Soup" paper
 
-This repository contains implementations of Gaussian Process (GP) models integrated into the [Stone Soup](https://github.com/dstl/Stone-Soup) tracking framework. This is associated with the paper "Dynamics-informed Gaussian Processes models in Stone Soup", Chung, Lydeard, Godsill, 2025.
+This repository contains implementations of Gaussian Process (GP) models integrated into the [Stone Soup](https://github.com/dstl/Stone-Soup) tracking framework. This is associated with the paper "Dynamics-Informed Gaussian Processes models in Stone Soup", Chung, Lydeard, Godsill, 2025.
 
 The modified Stone Soup library, including these models, is included as a submodule
 
