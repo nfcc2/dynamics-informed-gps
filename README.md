@@ -12,6 +12,7 @@ The modified Stone Soup library, including these models, is included as a submod
 - **`eval_code/`** - Contains code used for the evaluation section of the associated paper.
 - **`synthetic.py`** - Generate synthetic data from a GP and track with one or more GP models.
 - **`mosquito.py`** - Tracks mosquito coordinates obtained from [fruit fly and mosquito flight trajectories](https://datadryad.org/dataset/doi:10.5061/dryad.n0b8m) stored in **`mosquito_coordinates.csv`**.
+- **`synthetic_optim.py`** This script generates synthetic data using a selected model, computes the marginal log likelihood over a grid of length scales and kernel variances, and visualises the results with a contour plot highlighting both global and local maxima.
 - **`tracking/`** - Contains helper functions for tracking implementations.
 
 ## Installation
@@ -51,9 +52,15 @@ jupyter notebook iGP_tutorial.ipynb
 ```
 
 ### Running Synthetic Data Evaluation
-Replicates Figure 3, visualising an example trajectory from a generating model, along with estimated tracks from tracking models.
+Replicates Figure 2, visualising an example trajectory from a generating model, along with estimated tracks from tracking models.
 ```bash
 python eval_code/synthetic.py
+```
+
+### Running Synthetic Optimisation Plots
+Replicates Figure 3, visualising marginal log likelihood surface plots from a generating model on its trajectory.
+```bash
+python eval_code/synthetic_optim.py
 ```
 
 ### Tracking Mosquito Coordinates
