@@ -18,13 +18,12 @@ model_abbreviations = {
 }
 
 model_colors = {
-    "SlidingWindowGP": "limegreen", 
+    "SlidingWindowGP": "lime", 
     "IntegratedGP": "mediumorchid", 
-    "TwiceIntegratedGP": "coral", 
+    "TwiceIntegratedGP": "green", 
     "DynamicsInformedIntegratedGP": "gold", 
     "DynamicsInformedTwiceIntegratedGP": "skyblue"
 }
-
 
 def plot_base(gt_x, gt_y, meas_x, meas_y, figsize=(10, 5)):
     """Configure base plot for figures with ground truth and measurements."""

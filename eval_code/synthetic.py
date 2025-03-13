@@ -18,18 +18,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # define params
-generating_model = "iiSE"
+generating_model = "iiDSE"
 tracking_models = ["iSE", "iDSE", "iiSE", "iiDSE"]
 
 time_interval = timedelta(seconds=0.1)
 num_steps = 100
 
 # Simulated Gaussian noise standard deviation and variance
-noise_sd = 0.5 # 0.1 for iDSE
+noise_sd_dict = {"iDSE": 0.1, "iiSE": 0.3, "iiDSE": 0.25}
+noise_sd = noise_sd_dict[generating_model]
 noise_var = noise_sd ** 2
-
-# Colours for visualisation
-colors = {"iSE": "mediumorchid", "iDSE": "gold", "iiSE": "coral", "iiDSE": "skyblue", "SE": "limegreen"}
 
 # model parameters
 common_model_params = {
@@ -47,10 +45,24 @@ generating_model_params = {
 }
 
 tracking_model_params = {
-    "iSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
-    "iDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}, "dynamics_coeff": -0.2, "gp_coeff": 1},
-    "iiSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 3.4}},
-    "iiDSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 3.4}, "dynamics_coeff": -0.6, "gp_coeff": 1}
+    "iDSE": {
+        "iSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
+        "iDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}, "dynamics_coeff": -0.2, "gp_coeff": 1},
+        "iiSE": {"kernel_params": {"length_scale": 0.5, "kernel_variance": 5}},
+        "iiDSE": {"kernel_params": {"length_scale": 0.5, "kernel_variance": 5}, "dynamics_coeff": -0.5, "gp_coeff": 1}
+    }, 
+    "iiSE": {
+        "iSE": {"kernel_params": {"length_scale": 2.5, "kernel_variance": 5}},
+        "iDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 5}, "dynamics_coeff": -0.01, "gp_coeff": 1},
+        "iiSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
+        "iiDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}, "dynamics_coeff": -0.2, "gp_coeff": 1}
+    }, 
+    "iiDSE": {
+        "iSE": {"kernel_params": {"length_scale": 1.5, "kernel_variance": 2}},
+        "iDSE": {"kernel_params": {"length_scale": 1.5, "kernel_variance": 2}, "dynamics_coeff": -0.01, "gp_coeff": 1},
+        "iiSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
+        "iiDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}, "dynamics_coeff": -0.2, "gp_coeff": 1}
+    }
 }
 
 if __name__ == "__main__":
@@ -70,7 +82,7 @@ if __name__ == "__main__":
     print("="*40) 
 
     for i in range(len(tracking_models)):
-        model_params_combined = {**common_model_params, **tracking_model_params[tracking_models[i]]}
+        model_params_combined = {**common_model_params, **tracking_model_params[generating_model][tracking_models[i]]}
         transition_model = initialise_transition_model(tracking_models[i], **model_params_combined)
         measurement_model = initialise_measurement_model(transition_model, noise_var)
         track, log_lik, rmse = perform_tracking(gt_x, gt_y, meas_x, meas_y, transition_model, measurement_model, time_interval, prior_var=noise_var)

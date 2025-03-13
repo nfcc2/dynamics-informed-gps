@@ -92,31 +92,34 @@ max_ls = length_scales[max_idx[0]]
 max_kv = kernel_variances[max_idx[1]]
 max_LL = LL_values[max_idx]
 
-# Store local maxima
-local_maxima = []
-
 # Find local maxima in LL_values
+local_maxima = []
 for i in range(1, LL_values.shape[0] - 1):  # Avoid edges
     for j in range(1, LL_values.shape[1] - 1):  # Avoid edges
         if is_local_maxima(i, j, LL_values):
             local_maxima.append((i, j, LL_values[i, j]))
 
-# If you want to extract the corresponding parameters for the local maxima
+# Extract the corresponding parameters for the local maxima
 local_maxima_params = [(length_scales[i], kernel_variances[j], LL_value) 
                        for i, j, LL_value in local_maxima]
+
+# Obtain MLL for true parameters
+measurement_model_gen = initialise_measurement_model(transition_model_gen, noise_var)
+_, log_lik_true, _ = perform_tracking(gt_x, gt_y, meas_x, meas_y, transition_model_gen, measurement_model_gen, time_interval, prior_var=noise_var)
 
 # Contour plot
 plt.figure(figsize=(8, 6))
 X, Y = np.meshgrid(kernel_variances, length_scales)
 contour = plt.contourf(X, Y, LL_values, levels=20, cmap="viridis")
-plt.colorbar(contour, label="Log Likelihood")
+plt.colorbar(contour, label="Marginal log likelihood (MLL)")
 
-for ls, kv, log_lik in local_maxima_params:
-    plt.scatter(kv, ls, color="red", marker="x", label=r"LL: {0:.2f} ($\ell$={1:.2f}, $\sigma^2$={2:.2f})".format(log_lik, ls, kv))
+plt.scatter(1, 2, color="blue", marker="o", label=r"True values: $\ell$={0:.2f}, $\sigma^2$={1:.2f}, MLL={2:.2f}".format(2, 1, log_lik_true))
+plt.scatter(max_kv, max_ls, color="red", marker="x", label=r"Maximum: $\ell$={0:.2f}, $\sigma^2$={1:.2f}, MLL={2:.2f}".format(max_ls, max_kv, max_LL))
 
-plt.scatter(max_kv, max_ls, color="red", marker="x", label=r"LL: {0:.2f} ($\ell$={1:.2f}, $\sigma^2$={2:.2f})".format(max_LL, max_ls, max_kv))
-plt.scatter(1, 2, color="blue", marker="x", label=r"True values ($\ell$={0:.2f}, $\sigma^2$={1:.2f})".format(2, 1))
-plt.xlabel("Kernel Variance")
-plt.ylabel("Length Scale")
+for ls, kv, ll in local_maxima_params:
+    plt.scatter(kv, ls, color="purple", marker="x", label=r"Local maximum: $\ell$={0:.2f}, $\sigma^2$={1:.2f}, MLL={2:.2f}".format(ls, kv, ll))
+
+plt.xlabel("Kernel variance $\sigma^2$")
+plt.ylabel("Length scale $\ell$")
 plt.legend()
 plt.show()

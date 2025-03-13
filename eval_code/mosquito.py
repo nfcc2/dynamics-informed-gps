@@ -23,9 +23,6 @@ num_steps = 100
 noise_sd = 0.005
 noise_var = noise_sd ** 2
 
-# Colours for visualisation
-colors = {"iSE": "mediumorchid", "iDSE": "gold", "iiSE": "coral", "iiDSE": "skyblue", "SE": "limegreen"}
-
 # model parameters
 common_model_params = {
     "window_size": 10,
@@ -37,8 +34,8 @@ tracking_model_params = {
     "SE": {"kernel_params": {"length_scale": 0.3, "kernel_variance": 0.03}},
     "iSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.1}},
     "iDSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.1}, "dynamics_coeff": -0.3, "gp_coeff": 1},
-    "iiSE": {"kernel_params": {"length_scale": 0.06, "kernel_variance": 3}},
-    "iiDSE": {"kernel_params": {"length_scale": 0.06, "kernel_variance": 3}, "dynamics_coeff": -0.9, "gp_coeff": 1}
+    "iiSE": {"kernel_params": {"length_scale": 0.06, "kernel_variance": 1}},
+    "iiDSE": {"kernel_params": {"length_scale": 0.06, "kernel_variance": 1}, "dynamics_coeff": -0.01, "gp_coeff": 1}
 }
 
 if __name__ == "__main__":
