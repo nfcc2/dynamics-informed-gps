@@ -49,17 +49,17 @@ tracking_model_params = {
         "iSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
         "iDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}, "dynamics_coeff": -0.2, "gp_coeff": 1},
         "iiSE": {"kernel_params": {"length_scale": 0.5, "kernel_variance": 5}},
-        "iiDSE": {"kernel_params": {"length_scale": 0.5, "kernel_variance": 5}, "dynamics_coeff": -0.5, "gp_coeff": 1}
+        "iiDSE": {"kernel_params": {"length_scale": 0.5, "kernel_variance": 5}, "dynamics_coeff": -0.2, "gp_coeff": 1}
     }, 
     "iiSE": {
         "iSE": {"kernel_params": {"length_scale": 2.5, "kernel_variance": 5}},
-        "iDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 5}, "dynamics_coeff": -0.01, "gp_coeff": 1},
+        "iDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 2.5}, "dynamics_coeff": 0.2, "gp_coeff": 1},
         "iiSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
         "iiDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}, "dynamics_coeff": -0.2, "gp_coeff": 1}
     }, 
     "iiDSE": {
-        "iSE": {"kernel_params": {"length_scale": 1.5, "kernel_variance": 2}},
-        "iDSE": {"kernel_params": {"length_scale": 1.5, "kernel_variance": 2}, "dynamics_coeff": -0.01, "gp_coeff": 1},
+        "iSE": {"kernel_params": {"length_scale": 2.5, "kernel_variance": 5}},
+        "iDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 2.5}, "dynamics_coeff": 0.1, "gp_coeff": 1},
         "iiSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}},
         "iiDSE": {"kernel_params": {"length_scale": 2, "kernel_variance": 1}, "dynamics_coeff": -0.2, "gp_coeff": 1}
     }
@@ -89,7 +89,11 @@ if __name__ == "__main__":
 
         print(f"{tracking_models[i]:<10} {log_lik:<20.4f} {rmse:<10.4f}")
         plot_tracks(track, transition_model, measurement_model)
-        add_track_unc_stonesoup(track, transition_model)
+
+        # only add uncertainty intervals of one iGP and one iiGP model for clarity. 
+        # the iSE and iDSE have similar shapes, and similarly for the iiSE and iiDSE models
+        if tracking_models[i] == "iDSE" or tracking_models[i] == "iiDSE":
+            add_track_unc_stonesoup(track, transition_model)
     
     plt.grid(True)
     plt.xlabel("X Position")
