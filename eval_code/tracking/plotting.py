@@ -18,7 +18,7 @@ model_abbreviations = {
 }
 
 model_colors = {
-    "SlidingWindowGP": "lime", 
+    "SlidingWindowGP": "salmon", 
     "IntegratedGP": "mediumorchid", 
     "TwiceIntegratedGP": "green", 
     "DynamicsInformedIntegratedGP": "gold", 
