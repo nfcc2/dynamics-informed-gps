@@ -20,7 +20,7 @@ time_interval = timedelta(seconds=0.01)
 num_steps = 100
 
 # Simulated Gaussian noise standard deviation and variance
-noise_sd = 0.005
+noise_sd = 0.01
 noise_var = noise_sd ** 2
 
 # model parameters
@@ -31,15 +31,15 @@ common_model_params = {
 }
 
 tracking_model_params = {
-    "SE": {"kernel_params": {"length_scale": 0.3, "kernel_variance": 0.03}},
-    "iSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.1}},
-    "iDSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.1}, "dynamics_coeff": -0.3, "gp_coeff": 1},
-    "iiSE": {"kernel_params": {"length_scale": 0.06, "kernel_variance": 1}},
-    "iiDSE": {"kernel_params": {"length_scale": 0.06, "kernel_variance": 1}, "dynamics_coeff": -0.01, "gp_coeff": 1}
+    "SE": {"kernel_params": {"length_scale": 0.5, "kernel_variance": 0.5}},
+    "iSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.05}},
+    "iDSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.05}, "dynamics_coeff": -0.3, "gp_coeff": 1},
+    "iiSE": {"kernel_params": {"length_scale": 0.05, "kernel_variance": 1}},
+    "iiDSE": {"kernel_params": {"length_scale": 0.05, "kernel_variance": 1}, "dynamics_coeff": -0.3, "gp_coeff": 1}
 }
 
 if __name__ == "__main__":
-    np.random.seed(2)
+    np.random.seed(10)
     start_time = datetime.now()
 
     gt_x, gt_y = import_ground_truth_coordinates("mosquito_coordinates.csv")
@@ -60,7 +60,9 @@ if __name__ == "__main__":
 
         print(f"{tracking_models[i]:<10} {log_lik:<20.4f} {rmse:<10.7f}")
         plot_tracks(track, transition_model, measurement_model)
-        add_track_unc_stonesoup(track, transition_model)
+
+        if tracking_models[i] in ["SE", "iDSE", "iiDSE"]:
+            add_track_unc_stonesoup(track, transition_model)
     
     plt.grid(True)
     plt.xlabel("X Position")
