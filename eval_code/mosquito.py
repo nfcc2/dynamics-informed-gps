@@ -42,11 +42,11 @@ if __name__ == "__main__":
     np.random.seed(10)
     start_time = datetime.now()
 
-    gt_x, gt_y = import_ground_truth_coordinates("mosquito_coordinates.csv")
-    meas_x, meas_y = simulate_gaussian_measurements(gt_x, gt_y, noise_sd)
+    gt = import_ground_truth_coordinates("mosquito_coordinates.csv")
+    meas = simulate_gaussian_measurements(gt, noise_sd)
 
     # Plot ground truth and measurements
-    plot_base(gt_x, gt_y, meas_x, meas_y)
+    plot_base(gt, meas)
 
     # Carry out tracking, plot tracks with uncertainty intervals for each model
     print(f"{'Model':<10} {'Log Likelihood':<20} {'RMSE':<10}")
@@ -54,9 +54,9 @@ if __name__ == "__main__":
 
     for i in range(len(tracking_models)):
         model_params_combined = {**common_model_params, **tracking_model_params[tracking_models[i]]}
-        transition_model = initialise_transition_model(tracking_models[i], **model_params_combined)
+        transition_model = initialise_transition_model(tracking_models[i], dim=2, **model_params_combined)
         measurement_model = initialise_measurement_model(transition_model, noise_var)
-        track, log_lik, rmse = perform_tracking(gt_x, gt_y, meas_x, meas_y, transition_model, measurement_model, time_interval, prior_var=noise_var)
+        track, log_lik, rmse = perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
 
         print(f"{tracking_models[i]:<10} {log_lik:<20.4f} {rmse:<10.7f}")
         plot_tracks(track, transition_model, measurement_model)

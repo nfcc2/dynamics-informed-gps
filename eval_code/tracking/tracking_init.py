@@ -9,26 +9,40 @@ import datetime
 import numpy as np
 from scipy.stats import multivariate_normal
 import pandas as pd
+from typing import List
 
 
-def import_ground_truth_coordinates(file_path):
-    """Import the ground truth coordinates from a csv file."""
+def import_ground_truth_coordinates(file_path, dim=2):
+    """Import specified number of ground truth position dimensions from a CSV file."""
     df = pd.read_csv(file_path)
-    gt_x, gt_y = np.array(df['x']), np.array(df['y'])
-    return gt_x, gt_y
+    
+    # Expected column names in order: x_position, y_position, z_position, ...
+    base_dims = ['x', 'y', 'z']
+    if dim > len(base_dims):
+        raise ValueError(f"Can only handle up to {len(base_dims)} dimensions.")
+
+    position_columns = [f"{dim}_position" for dim in base_dims[:dim]]
+
+    for col in position_columns:
+        if col not in df.columns:
+            raise ValueError(f"Missing expected column: '{col}'")
+
+    arrays = tuple(df[col].to_numpy() for col in position_columns)
+    return arrays
 
 
 def generate_synthetic_ground_truth(transition_model, prior, num_steps, time_interval):
-    """Generate synthetic path using given GP transition model."""
+    """
+    Generate synthetic path using given GP transition model.
+    """
     truth = GroundTruthPath(prior)
     start_time = prior.timestamp
-    ndim_1d = transition_model.model_list[0].ndim_state
-    gt_x = []
-    gt_y = []
+    _, dim, ndim_1d, _ = get_model_properties(transition_model)
+    gt = [[] for _ in range(dim)]
     
     for t in range(1, num_steps+1):
-        gt_x.append(prior.state_vector[0])
-        gt_y.append(prior.state_vector[ndim_1d])
+        for d in range(dim):
+            gt[d].append(prior.state_vector[d * ndim_1d])
         covar = transition_model.covar(track=truth, time_interval=time_interval)
         noise = multivariate_normal.rvs(np.zeros(ndim_1d * 2), covar)
         noise = np.atleast_2d(noise).T
@@ -36,68 +50,129 @@ def generate_synthetic_ground_truth(transition_model, prior, num_steps, time_int
         truth.append(GroundTruthState(next_state, timestamp=start_time + t * time_interval))
         prior = truth[-1]
 
-    return (gt_x, gt_y)
+    return gt
 
 
-def simulate_gaussian_measurements(gt_x, gt_y, sd):
+def simulate_gaussian_measurements(gt, sd):
     """Generate measurements with added Gaussian noise from ground truth coordinates."""
-    n = len(gt_x)
-    noise_x = np.random.normal(0, sd, n)
-    noise_y = np.random.normal(0, sd, n)
-    meas_x = gt_x + noise_x
-    meas_y = gt_y + noise_y
+    meas = []
+    for gt_1d in gt:
+        n = len(gt_1d)
+        noise = np.random.normal(0, sd, n)
+        meas.append(gt_1d + noise)
     
-    return meas_x, meas_y
+    return meas
 
 
-def generate_stonesoup_ground_truth(transition_model, gt_x, gt_y, time_interval):
-    """Convert raw ground truth coordinates gt_x, gt_y to Stone Soup GroundTruthState objects"""
-    gt_x = gt_x.copy()
-    gt_y = gt_y.copy()
+def generate_stonesoup_ground_truth(transition_model, gt: List[np.ndarray], time_interval) -> GroundTruthPath:
+    """
+    Convert raw ground truth coordinates gt = [gt_x, gt_y, ...] to Stone Soup GroundTruthState objects.
+
+    Parameters
+    ----------
+    transition_model : object
+        The transition model, composed of per-dimension GP models.
+    gt : List[np.ndarray]
+        List of ground truth coordinate arrays, one per spatial dimension.
+    time_interval : datetime.timedelta
+        Time interval between successive ground truth points.
+
+    Returns
+    -------
+    GroundTruthPath
+        A Stone Soup GroundTruthPath object populated with GroundTruthState instances.
+    """
+    gt = [g.copy() for g in gt]
     markov_approx, dim, ndim_1d, num_aug_states = get_model_properties(transition_model)
-
     truth = GroundTruthPath()
     start_time = datetime.datetime.now()
-    prior_x, prior_y = gt_x[0], gt_y[0]
+    priors = [g[0] for g in gt]
+
     if markov_approx == 1:
-        gt_x -= prior_x
-        gt_y -= prior_y
-    
-    for t in range(len(gt_x)):
+        for i in range(dim):
+            gt[i] -= priors[i]
+
+    for t in range(len(gt[0])):  # Assume all gt arrays are of equal length
         state_vector = np.zeros(ndim_1d * dim)
-        state_vector[0], state_vector[ndim_1d] = gt_x[t], gt_y[t]
+
+        for i in range(dim):
+            state_vector[i * ndim_1d] = gt[i][t]
+
         if markov_approx == 1:
-            # for iiGPs, assume prior velocity = 0
-            state_vector[ndim_1d - num_aug_states], state_vector[-num_aug_states] = prior_x, prior_y
+            # assume prior velocity = 0 for iiGPs
+            for i in range(dim):
+                state_vector[(i + 1) * ndim_1d - num_aug_states] = priors[i]
+
         truth.append(GroundTruthState(state_vector, timestamp=start_time + t * time_interval))
-    
+
     return truth
 
 
-def generate_stonesoup_measurements(measurement_model, meas_x, meas_y, ground_truth):
-    """Convert raw measurements meas_x, meas_y to Stone Soup detection objects"""
+def generate_stonesoup_measurements(measurement_model, meas: List[np.ndarray], ground_truth) -> List[Detection]:
+    """
+    Convert raw measurements to Stone Soup Detection objects.
+
+    Parameters
+    ----------
+    measurement_model : MeasurementModel
+        The measurement model to be associated with each Detection.
+    meas : List[np.ndarray]
+        List of measurement arrays, one per spatial dimension.
+    ground_truth : GroundTruthPath
+        Ground truth states to align timestamps with.
+
+    Returns
+    -------
+    List[Detection]
+        List of Stone Soup Detection objects.
+    """
     measurements = []
-    for x, y, truth in zip(meas_x, meas_y, ground_truth):
-        measurement = Detection([x, y], timestamp=truth.timestamp, measurement_model=measurement_model)
+    for t in range(len(ground_truth)):
+        measurement_vector = np.array([meas[d][t] for d in range(len(meas))])
+        measurement = Detection(measurement_vector, timestamp=ground_truth[t].timestamp, measurement_model=measurement_model)
         measurements.append(measurement)
 
     return measurements
 
 
-def create_prior_state(transition_model, timestamp, prior_x, prior_y, prior_var):
-    """Initialise Gaussian prior state vector."""
+from typing import List
+import numpy as np
+from stonesoup.types.state import GaussianState
+
+def create_prior_state(transition_model, timestamp, prior: List[float], prior_var: List[float]) -> GaussianState:
+    """
+    Initialise Gaussian prior state vector for arbitrary-dimensional tracking.
+
+    Parameters
+    ----------
+    transition_model : object
+        The transition model with model_list containing per-dimension models.
+    timestamp : datetime.datetime
+        The timestamp for the prior state.
+    prior : List[float]
+        List of initial positions (one per dimension).
+    prior_var : List[float]
+        List of variances for initial positions (one per dimension).
+
+    Returns
+    -------
+    GaussianState
+        The initialized prior state as a GaussianState object.
+    """
     ndim = transition_model.ndim_state
     markov_approx, dim, ndim_1d, num_aug_states = get_model_properties(transition_model)
 
     state_vector = np.zeros(ndim)
     prior_covar = np.zeros((ndim, ndim))
-    prior_covar[0, 0] = prior_var
-    prior_covar[ndim_1d, ndim_1d] = prior_var
 
-    if markov_approx == 1:
-        state_vector[ndim_1d - num_aug_states], state_vector[-num_aug_states] = prior_x, prior_y
-    else:
-        state_vector[0], state_vector[ndim_1d] = prior_x, prior_y
+    for i in range(dim):
+        prior_covar[i * ndim_1d, i * ndim_1d] = prior_var[i]
 
-    prior_state = GaussianState(state_vector, prior_covar, timestamp=timestamp)
-    return prior_state
+        if markov_approx == 1:
+            # Set the augmented state (e.g., prior mean position or velocity)
+            aug_index = (i + 1) * ndim_1d - num_aug_states
+            state_vector[aug_index] = prior[i]
+        else:
+            state_vector[i * ndim_1d] = prior[i]
+
+    return GaussianState(state_vector, prior_covar, timestamp=timestamp)

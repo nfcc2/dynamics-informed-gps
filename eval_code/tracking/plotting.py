@@ -1,11 +1,15 @@
-# helper plotting functions
+# helper plotting functions (2D plots)
 
 from tracking.models_utils import get_model_properties
 
-import numpy as np
+
 import matplotlib.pyplot as plt
 from matplotlib.patches import PathPatch, Circle
 from matplotlib.path import Path
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
+
+import numpy as np
 from scipy.stats import norm
 
 
@@ -25,24 +29,46 @@ model_colors = {
     "DynamicsInformedTwiceIntegratedGP": "skyblue"
 }
 
-def plot_base(gt_x, gt_y, meas_x, meas_y, figsize=(10, 5)):
-    """Configure base plot for figures with ground truth and measurements."""
-    plt.figure(figsize=figsize)
-    plt.plot(gt_x, gt_y, label="Ground truth", linestyle="dashed", color="black")
-    plt.scatter(meas_x, meas_y, label="Measurements", color="blue", s=5)
+
+
+def plot_base(gt, meas, figsize=(10, 5)):
+    """Configure base plot for figures with ground truth and measurements (2D or 3D)."""
+    dim = len(gt)
+    if dim not in [2, 3]:
+        raise ValueError('Plotting supports only 2D or 3D ground truth/meas data.')
+
+    fig = plt.figure(figsize=figsize)
+    if dim == 3:
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot(gt[0], gt[1], gt[2], label="Ground truth", linestyle="dashed", color="black")
+        ax.scatter(meas[0], meas[1], meas[2], label="Measurements", color="blue", s=5)
+    else:
+        ax = fig.add_subplot(111)
+        ax.plot(gt[0], gt[1], label="Ground truth", linestyle="dashed", color="black")
+        ax.scatter(meas[0], meas[1], label="Measurements", color="blue", s=5)
+
+    return ax
 
 
 def plot_tracks(track, transition_model, measurement_model):
-    """Plot tracks for one model."""
-    x_vals, y_vals = zip(*[measurement_model.function(state) for state in track])
-    x_vals = list(x_vals)
-    y_vals = list(y_vals)
+    """Plot 2D or 3D tracks for one model."""
+    _, dim, _, _ = get_model_properties(transition_model)
+    coords = [measurement_model.function(state).flatten() for state in track]
+    coords = np.array(coords).T  # shape: (dim, N)
+
     transition_model_1d = transition_model.model_list[0]
     model_name = transition_model_1d.__class__.__name__
     model_abbrev = model_abbreviations[model_name]
     color = model_colors[model_name]
-    markov_approx, _, _, _ = get_model_properties(transition_model)
-    plt.plot(x_vals, y_vals, label=f"{model_abbrev}", color=color)
+
+    ax = plt.gca()
+    if dim == 3 and not hasattr(ax, 'zaxis'):
+        ax = plt.gcf().add_subplot(111, projection='3d')
+
+    if dim == 3:
+        ax.plot(coords[0], coords[1], coords[2], label=f"{model_abbrev}", color=color)
+    else:
+        ax.plot(coords[0], coords[1], label=f"{model_abbrev}", color=color)
 
 
 # This function was adapted from the example in the repository, licensed under the MIT license:

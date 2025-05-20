@@ -9,6 +9,7 @@ from stonesoup.models.transition.linear import (
 from stonesoup.models.measurement.linear import LinearGaussian
 
 import numpy as np
+from typing import Tuple
     
 # Define measurement model for Markov 1 models
 class LinearGaussianAugmented(LinearGaussian):
@@ -36,10 +37,11 @@ MODEL_CLASSES = {
 }
 
 
-def initialise_transition_model(model_name, window_size, markov_approx, kernel_params, dynamics_coeff=None, gp_coeff=None, prior_var=0):
+def initialise_transition_model(model_name, dim, window_size, markov_approx, kernel_params, dynamics_coeff=None, gp_coeff=None, prior_var=0):
     """
-    Initialise a 2D model by name with the given hyperparameters.
+    Initialise a n-dimensional model by name with the given hyperparameters.
     For SE-based models, kernel_params dict specifies length_scale and kernel_variance.
+    Specify n with dim parameter.
     """
     
     if model_name not in MODEL_CLASSES:
@@ -69,7 +71,7 @@ def initialise_transition_model(model_name, window_size, markov_approx, kernel_p
             "gp_coeff": gp_coeff
         })
 
-    return CombinedLinearGaussianTransitionModel([ModelClass(**model_params), ModelClass(**model_params)])
+    return CombinedLinearGaussianTransitionModel([ModelClass(**model_params) for _ in range(dim)])
 
 
 def initialise_measurement_model(transition_model, var):
@@ -81,24 +83,35 @@ def initialise_measurement_model(transition_model, var):
             ndim_meas=dim,
             num_aug_states=num_aug_states,
             mapping=(),  # placeholder, not needed as we construct the matrix directly
-            noise_covar=np.array([[var, 0], [0, var]])
+            noise_covar=np.eye(dim)*var
         )
     else:
         return LinearGaussian(
             ndim_state=transition_model.ndim_state,
             mapping=(0, ndim_1d),
-            noise_covar=np.array([[var, 0], [0, var]])
+            noise_covar=np.eye(dim)*var
         )
 
 
-def get_model_properties(transition_model):
+def get_model_properties(transition_model) -> Tuple[int, int, int, int]:
     """
-    Returns model properties.
-    markov_approx: order of markovian approximation used. 
-        For the SE model, this is set to 0 as the plotting/initialisation logic for approx = 1 is different.
-    dim: number of dimensions we are tracking.
-    ndim_1d: dimension of state vector in 1 dimension.
-    num_aug_states: For Markov 1 models, the number of augmented states (mean position or mean velocity).
+    Extract properties from the transition model.
+
+    Parameters
+    ----------
+    transition_model : object
+        A transition model that contains a list of 1D models (e.g., SlidingWindowGP or iDSE).
+
+    Returns
+    -------
+    markov_approx : int
+        The order of Markovian approximation used. For SE models, this is 0.
+    dim : int
+        The number of spatial dimensions being tracked.
+    ndim_1d : int
+        The dimensionality of the state vector in a single dimension.
+    num_aug_states : int
+        The number of augmented states (e.g., mean velocity or position).
     """
     dim = len(transition_model.model_list)
     transition_model_1d = transition_model.model_list[0]

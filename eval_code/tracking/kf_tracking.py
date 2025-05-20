@@ -11,17 +11,17 @@ from stonesoup.hypothesiser.simple import SingleHypothesis
 import numpy as np
 from sklearn.metrics import mean_squared_error
 
-def perform_tracking(gt_x, gt_y, meas_x, meas_y, transition_model, measurement_model, time_interval, prior_var):
+def perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var):
     """Carry out tracking with Kalman filtering given raw ground truth and measurement data."""
 
     # Step 1: Generate stone soup ground truth path
-    ground_truth = generate_stonesoup_ground_truth(transition_model, gt_x, gt_y, time_interval)
+    ground_truth = generate_stonesoup_ground_truth(transition_model, gt, time_interval)
     
     # Step 2: Convert measurements to Stone Soup detections
-    measurements = generate_stonesoup_measurements(measurement_model, meas_x, meas_y, ground_truth)
+    measurements = generate_stonesoup_measurements(measurement_model, meas, ground_truth)
     
     # Step 3: Track initialisation
-    prior_state = create_prior_state(transition_model, ground_truth[0].timestamp, gt_x[0], gt_y[0], prior_var)
+    prior_state = create_prior_state(transition_model, ground_truth[0].timestamp, [gt[0][0], gt[1][0]], [prior_var, prior_var])
     track = Track(prior_state)
 
     # Step 4: Define Kalman predictor and updater
@@ -32,7 +32,7 @@ def perform_tracking(gt_x, gt_y, meas_x, meas_y, transition_model, measurement_m
     track, log_lik = kalman_filter(predictor, updater, measurement_model, track, measurements)
     
     # Step 6: Compute rmse
-    rmse = compute_rmse(measurement_model, track, gt_x, gt_y)
+    rmse = compute_rmse(measurement_model, track, gt[0], gt[1])
 
     return track, log_lik, rmse
 
