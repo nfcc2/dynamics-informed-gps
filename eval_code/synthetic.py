@@ -18,8 +18,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # define params
-generating_model = "iiDSE"
+generating_model = "iDSE"
 tracking_models = ["iSE", "iDSE", "iiSE", "iiDSE"]
+dim = 3  # number of dimensions
 
 time_interval = timedelta(seconds=0.1)
 num_steps = 100
@@ -70,8 +71,8 @@ if __name__ == "__main__":
     start_time = datetime.now()
 
     model_params_combined = {**common_model_params, **generating_model_params[generating_model]}
-    transition_model_gen = initialise_transition_model(generating_model, dim=2, **model_params_combined)
-    prior = create_prior_state(transition_model_gen, start_time, [np.random.rand(), np.random.rand()], [noise_var, noise_var])
+    transition_model_gen = initialise_transition_model(generating_model, dim=dim, **model_params_combined)
+    prior = create_prior_state(transition_model_gen, start_time, [np.random.rand() for _ in range(dim)], [noise_var for _ in range(dim)])
     gt = generate_synthetic_ground_truth(transition_model_gen, prior, num_steps, time_interval)
     meas = simulate_gaussian_measurements(gt, noise_sd)
     # Plot ground truth and measurements
@@ -83,7 +84,7 @@ if __name__ == "__main__":
 
     for i in range(len(tracking_models)):
         model_params_combined = {**common_model_params, **tracking_model_params[generating_model][tracking_models[i]]}
-        transition_model = initialise_transition_model(tracking_models[i], dim=2, **model_params_combined)
+        transition_model = initialise_transition_model(tracking_models[i], dim=dim, **model_params_combined)
         measurement_model = initialise_measurement_model(transition_model, noise_var)
         track, log_lik, rmse = perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
 

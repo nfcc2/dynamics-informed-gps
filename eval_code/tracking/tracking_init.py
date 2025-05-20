@@ -21,7 +21,7 @@ def import_ground_truth_coordinates(file_path, dim=2):
     if dim > len(base_dims):
         raise ValueError(f"Can only handle up to {len(base_dims)} dimensions.")
 
-    position_columns = [f"{dim}_position" for dim in base_dims[:dim]]
+    position_columns = [f"position_{dim}" for dim in base_dims[:dim]]
 
     for col in position_columns:
         if col not in df.columns:
@@ -44,7 +44,7 @@ def generate_synthetic_ground_truth(transition_model, prior, num_steps, time_int
         for d in range(dim):
             gt[d].append(prior.state_vector[d * ndim_1d])
         covar = transition_model.covar(track=truth, time_interval=time_interval)
-        noise = multivariate_normal.rvs(np.zeros(ndim_1d * 2), covar)
+        noise = multivariate_normal.rvs(np.zeros(ndim_1d * dim), covar)
         noise = np.atleast_2d(noise).T
         next_state = transition_model.function(prior, noise=noise, track=truth, time_interval=time_interval)
         truth.append(GroundTruthState(next_state, timestamp=start_time + t * time_interval))
@@ -134,10 +134,6 @@ def generate_stonesoup_measurements(measurement_model, meas: List[np.ndarray], g
 
     return measurements
 
-
-from typing import List
-import numpy as np
-from stonesoup.types.state import GaussianState
 
 def create_prior_state(transition_model, timestamp, prior: List[float], prior_var: List[float]) -> GaussianState:
     """

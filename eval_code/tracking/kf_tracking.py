@@ -1,6 +1,7 @@
 # Tracking workflow and kalman filtering
 
 from tracking.tracking_init import generate_stonesoup_ground_truth, generate_stonesoup_measurements, create_prior_state
+from tracking.models_utils import get_model_properties
 
 from stonesoup.types.track import Track
 from stonesoup.predictor.kalman import KalmanPredictor
@@ -10,9 +11,12 @@ from stonesoup.hypothesiser.simple import SingleHypothesis
 
 import numpy as np
 from sklearn.metrics import mean_squared_error
+from typing import List
 
 def perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var):
     """Carry out tracking with Kalman filtering given raw ground truth and measurement data."""
+
+    _, dim, _, _ = get_model_properties(transition_model)
 
     # Step 1: Generate stone soup ground truth path
     ground_truth = generate_stonesoup_ground_truth(transition_model, gt, time_interval)
@@ -21,7 +25,7 @@ def perform_tracking(gt, meas, transition_model, measurement_model, time_interva
     measurements = generate_stonesoup_measurements(measurement_model, meas, ground_truth)
     
     # Step 3: Track initialisation
-    prior_state = create_prior_state(transition_model, ground_truth[0].timestamp, [gt[0][0], gt[1][0]], [prior_var, prior_var])
+    prior_state = create_prior_state(transition_model, ground_truth[0].timestamp, [gt[d][0] for d in range(dim)], [prior_var for _ in range(dim)])
     track = Track(prior_state)
 
     # Step 4: Define Kalman predictor and updater
@@ -32,7 +36,7 @@ def perform_tracking(gt, meas, transition_model, measurement_model, time_interva
     track, log_lik = kalman_filter(predictor, updater, measurement_model, track, measurements)
     
     # Step 6: Compute rmse
-    rmse = compute_rmse(measurement_model, track, gt[0], gt[1])
+    rmse = compute_rmse(measurement_model, track, gt)
 
     return track, log_lik, rmse
 
@@ -59,15 +63,33 @@ def kalman_filter(predictor, updater, measurement_model, track, measurements):
     return track, log_lik
 
 
-def compute_rmse(measurement_model, track, gt_x, gt_y):
-    pos = [measurement_model.function(state) for state in track]
-    x_vals = []
-    y_vals = []
-    for state in pos:
-        x_vals.append(state[0])
-        y_vals.append(state[1])
-    rmse_x = mean_squared_error(gt_x, x_vals)
-    rmse_y = mean_squared_error(gt_y, y_vals)
-    overall_rmse = rmse_x + rmse_y
+def compute_rmse(measurement_model, track, gt: List[np.ndarray]) -> float:
+    """
+    Compute overall RMSE between the measurement model outputs and ground truth coordinates.
 
-    return overall_rmse
+    Parameters
+    ----------
+    measurement_model : object
+        Stone Soup measurement model used to map state space to measurement space.
+    track : list
+        List of Stone Soup State or GaussianState objects.
+    gt : List[np.ndarray]
+        List of ground truth coordinate arrays, one per spatial dimension (e.g., [gt_x, gt_y, ...]).
+
+    Returns
+    -------
+    float
+        Overall RMSE (sum of MSEs across dimensions).
+    """
+    pos = [measurement_model.function(state).flatten() for state in track]
+    pos = np.array(pos).T  # Shape: (dim, N)
+
+    if pos.shape[0] != len(gt):
+        raise ValueError(f"Mismatch between measurement output dimension {pos.shape[0]} and number of ground truth arrays {len(gt)}.")
+
+    rmse_components = [
+        mean_squared_error(gt[i], pos[i])
+        for i in range(len(gt))
+    ]
+
+    return sum(rmse_components)
