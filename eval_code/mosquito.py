@@ -14,7 +14,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # define params
-tracking_models = ["SE", "iSE", "iDSE", "iiSE", "iiDSE"]
+tracking_models = ["SE", "iSE", "iDSE", "iiSE", "iiDSE", "CV"]
+dim = 3
+
+trajectory_csv_path = "trajectories/5.csv"
 
 time_interval = timedelta(seconds=0.01)
 num_steps = 100
@@ -35,14 +38,15 @@ tracking_model_params = {
     "iSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.05}},
     "iDSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.05}, "dynamics_coeff": -0.3, "gp_coeff": 1},
     "iiSE": {"kernel_params": {"length_scale": 0.05, "kernel_variance": 1}},
-    "iiDSE": {"kernel_params": {"length_scale": 0.05, "kernel_variance": 1}, "dynamics_coeff": -0.3, "gp_coeff": 1}
+    "iiDSE": {"kernel_params": {"length_scale": 0.05, "kernel_variance": 1}, "dynamics_coeff": -0.3, "gp_coeff": 1},
+    "CV":{"kernel_params": {}, "noise_diff_coeff": 0.05}
 }
 
 if __name__ == "__main__":
     np.random.seed(10)
     start_time = datetime.now()
 
-    gt = import_ground_truth_coordinates("mosquito_coordinates.csv")
+    gt = import_ground_truth_coordinates(trajectory_csv_path, dim=dim)
     meas = simulate_gaussian_measurements(gt, noise_sd)
 
     # Plot ground truth and measurements
@@ -54,7 +58,7 @@ if __name__ == "__main__":
 
     for i in range(len(tracking_models)):
         model_params_combined = {**common_model_params, **tracking_model_params[tracking_models[i]]}
-        transition_model = initialise_transition_model(tracking_models[i], dim=2, **model_params_combined)
+        transition_model = initialise_transition_model(tracking_models[i], dim=dim, **model_params_combined)
         measurement_model = initialise_measurement_model(transition_model, noise_var)
         track, log_lik, rmse = perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
 

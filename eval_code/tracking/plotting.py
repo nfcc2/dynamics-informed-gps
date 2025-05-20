@@ -18,7 +18,8 @@ model_abbreviations = {
     "IntegratedGP": "iSE",
     "TwiceIntegratedGP": "iiSE",
     "DynamicsInformedIntegratedGP": "iDSE",
-    "DynamicsInformedTwiceIntegratedGP": "iiDSE"
+    "DynamicsInformedTwiceIntegratedGP": "iiDSE",
+    "ConstantVelocity": "CV"
 }
 
 model_colors = {
@@ -26,7 +27,8 @@ model_colors = {
     "IntegratedGP": "mediumorchid", 
     "TwiceIntegratedGP": "green", 
     "DynamicsInformedIntegratedGP": "gold", 
-    "DynamicsInformedTwiceIntegratedGP": "skyblue"
+    "DynamicsInformedTwiceIntegratedGP": "skyblue",
+    "ConstantVelocity": "red"
 }
 
 
@@ -77,6 +79,11 @@ def plot_tracks(track, transition_model, measurement_model):
 def add_track_unc_stonesoup(track, transition_model, opacity=0.3, cred_level=0.95):
     "Plot uncertainty intervals from a track."
     markov_approx, dim, ndim_1d, num_aug_states = get_model_properties(transition_model)
+
+    if dim == 3:
+        print("Warning: Uncertainty plotting not supported in 3D.")
+        return
+
     mu_x_index = ndim_1d - num_aug_states
     mu_y_index = - num_aug_states
 

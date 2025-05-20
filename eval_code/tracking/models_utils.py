@@ -4,7 +4,8 @@ from stonesoup.base import Property
 from stonesoup.models.transition.linear import (
     CombinedLinearGaussianTransitionModel,
     SlidingWindowGP, IntegratedGP, TwiceIntegratedGP, 
-    DynamicsInformedIntegratedGP, DynamicsInformedTwiceIntegratedGP
+    DynamicsInformedIntegratedGP, DynamicsInformedTwiceIntegratedGP,
+    ConstantVelocity
 )
 from stonesoup.models.measurement.linear import LinearGaussian
 
@@ -33,11 +34,12 @@ MODEL_CLASSES = {
     "iSE": IntegratedGP,
     "iiSE": TwiceIntegratedGP,
     "iDSE": DynamicsInformedIntegratedGP,
-    "iiDSE": DynamicsInformedTwiceIntegratedGP
+    "iiDSE": DynamicsInformedTwiceIntegratedGP,
+    "CV": ConstantVelocity
 }
 
 
-def initialise_transition_model(model_name, dim, window_size, markov_approx, kernel_params, dynamics_coeff=None, gp_coeff=None, prior_var=0):
+def initialise_transition_model(model_name, dim, window_size, markov_approx, kernel_params, dynamics_coeff=None, gp_coeff=None, prior_var=0, noise_diff_coeff=0):
     """
     Initialise a n-dimensional model by name with the given hyperparameters.
     For SE-based models, kernel_params dict specifies length_scale and kernel_variance.
@@ -71,6 +73,9 @@ def initialise_transition_model(model_name, dim, window_size, markov_approx, ker
             "gp_coeff": gp_coeff
         })
 
+    if model_name == "CV":
+        model_params = {"noise_diff_coeff": noise_diff_coeff}
+        
     return CombinedLinearGaussianTransitionModel([ModelClass(**model_params) for _ in range(dim)])
 
 
@@ -86,16 +91,17 @@ def initialise_measurement_model(transition_model, var):
             noise_covar=np.eye(dim)*var
         )
     else:
+        mapping = [i * ndim_1d for i in range(dim)]
         return LinearGaussian(
             ndim_state=transition_model.ndim_state,
-            mapping=(0, ndim_1d),
+            mapping=tuple(mapping),
             noise_covar=np.eye(dim)*var
         )
 
 
 def get_model_properties(transition_model) -> Tuple[int, int, int, int]:
     """
-    Extract properties from the transition model.
+    Extract properties from the transition model (assumes >1D model).
 
     Parameters
     ----------
@@ -116,6 +122,11 @@ def get_model_properties(transition_model) -> Tuple[int, int, int, int]:
     dim = len(transition_model.model_list)
     transition_model_1d = transition_model.model_list[0]
     ndim_1d = transition_model_1d.ndim_state
+    
+    name = type(transition_model_1d).__name__
+    if name == "ConstantVelocity":
+        return 0, dim, ndim_1d, 0
+
     num_aug_states = ndim_1d - transition_model_1d.window_size
 
     if transition_model_1d.__class__.__name__ == "SlidingWindowGP":
