@@ -12,12 +12,16 @@ from tracking.plotting import plot_base, plot_tracks, add_track_unc_stonesoup
 from datetime import datetime, timedelta
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 # define params
 tracking_models = ["SE", "iSE", "iDSE", "iiSE", "iiDSE", "CV"]
 dim = 3
 
-trajectory_csv_path = "trajectories/5.csv"
+# import trajectory and hyperparameters
+trajectory_idx = 1
+trajectory_csv_path = f"trajectories/{trajectory_idx}.csv"
+params_df = pd.read_csv(f"results/best_hyperparams_traj{trajectory_idx}.csv")
 
 time_interval = timedelta(seconds=0.01)
 num_steps = 100
@@ -33,17 +37,8 @@ common_model_params = {
     "prior_var": noise_var
 }
 
-tracking_model_params = {
-    "SE": {"kernel_params": {"length_scale": 0.5, "kernel_variance": 0.5}},
-    "iSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.05}},
-    "iDSE": {"kernel_params": {"length_scale": 0.1, "kernel_variance": 0.05}, "dynamics_coeff": -0.3, "gp_coeff": 1},
-    "iiSE": {"kernel_params": {"length_scale": 0.05, "kernel_variance": 1}},
-    "iiDSE": {"kernel_params": {"length_scale": 0.05, "kernel_variance": 1}, "dynamics_coeff": -0.3, "gp_coeff": 1},
-    "CV":{"kernel_params": {}, "noise_diff_coeff": 0.05}
-}
-
 if __name__ == "__main__":
-    np.random.seed(10)
+    np.random.seed(50)
     start_time = datetime.now()
 
     gt = import_ground_truth_coordinates(trajectory_csv_path, dim=dim)
@@ -57,7 +52,21 @@ if __name__ == "__main__":
     print("="*40) 
 
     for i in range(len(tracking_models)):
-        model_params_combined = {**common_model_params, **tracking_model_params[tracking_models[i]]}
+        row = params_df[params_df["model"] == tracking_models[i]].iloc[0]
+
+        model_params = {
+            "kernel_params": {
+                "length_scale": row.get("length_scale", 0.1),
+                "kernel_variance": row.get("kernel_variance", 0.1)
+            },
+            "gp_coeff": row.get("gp_coeff", 1),
+            "dynamics_coeff": row.get("dynamics_coeff"),
+            "noise_diff_coeff": row.get("noise_diff_coeff")
+        }
+
+        # Remove NaNs
+        model_params = {k: v for k, v in model_params.items() if pd.notna(v)}
+        model_params_combined = {**common_model_params, **model_params}
         transition_model = initialise_transition_model(tracking_models[i], dim=dim, **model_params_combined)
         measurement_model = initialise_measurement_model(transition_model, noise_var)
         track, log_lik, rmse = perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
