@@ -15,11 +15,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # define params
-tracking_models = ["SE", "iSE", "iDSE", "iiSE", "iiDSE", "CV"]
-dim = 3
+tracking_models = ["SE", "iSE", "iDSE", "iiSE", "iiDSE"]
+dim = 2
+lag = 10  # for smoothing
 
 # import trajectory and hyperparameters
-trajectory_idx = 1
+trajectory_idx = 5
 trajectory_csv_path = f"trajectories/{trajectory_idx}.csv"
 params_df = pd.read_csv(f"results/best_hyperparams_traj{trajectory_idx}.csv")
 
@@ -72,10 +73,10 @@ if __name__ == "__main__":
         track, log_lik, rmse = perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
 
         print(f"{tracking_models[i]:<10} {log_lik:<20.4f} {rmse:<10.7f}")
-        plot_tracks(track, transition_model, measurement_model)
+        plot_tracks(track, transition_model, measurement_model, lag=lag)
 
         if tracking_models[i] in ["SE", "iDSE", "iiDSE"]:
-            add_track_unc_stonesoup(track, transition_model)
+            add_track_unc_stonesoup(track, transition_model, lag=lag)
     
     plt.grid(True)
     plt.xlabel("X Position")

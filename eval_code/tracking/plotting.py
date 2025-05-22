@@ -52,11 +52,16 @@ def plot_base(gt, meas, figsize=(10, 5)):
     return ax
 
 
-def plot_tracks(track, transition_model, measurement_model):
+def plot_tracks(track, transition_model, measurement_model, lag=0):
     """Plot 2D or 3D tracks for one model."""
-    _, dim, _, _ = get_model_properties(transition_model)
-    coords = [measurement_model.function(state).flatten() for state in track]
-    coords = np.array(coords).T  # shape: (dim, N)
+    markov_approx, dim, ndim_1d, naug = get_model_properties(transition_model)
+
+    if lag >= ndim_1d - naug:
+        print("Invalid lag. Maximum lag allowed = window size - 1.")
+        return
+
+    means = get_coordinates(transition_model, track, lag)
+    means = means.T  # dimensions (dim, N)
 
     transition_model_1d = transition_model.model_list[0]
     model_name = transition_model_1d.__class__.__name__
@@ -68,34 +73,38 @@ def plot_tracks(track, transition_model, measurement_model):
         ax = plt.gcf().add_subplot(111, projection='3d')
 
     if dim == 3:
-        ax.plot(coords[0], coords[1], coords[2], label=f"{model_abbrev}", color=color)
+        ax.plot(means[0], means[1], means[2], label=f"{model_abbrev}", color=color)
     else:
-        ax.plot(coords[0], coords[1], label=f"{model_abbrev}", color=color)
+        ax.plot(means[0], means[1], label=f"{model_abbrev}", color=color)
 
 
 # This function was adapted from the example in the repository, licensed under the MIT license:
 # https://github.com/afredgcam/iGPs.git
 # Author: Fred Lydeard
-def add_track_unc_stonesoup(track, transition_model, opacity=0.3, cred_level=0.95):
+def add_track_unc_stonesoup(track, transition_model, lag=0, opacity=0.3, cred_level=0.95):
     "Plot uncertainty intervals from a track."
-    markov_approx, dim, ndim_1d, num_aug_states = get_model_properties(transition_model)
+    markov_approx, dim, ndim_1d, naug = get_model_properties(transition_model)
 
-    if dim == 3:
-        print("Warning: Uncertainty plotting not supported in 3D.")
+    if dim != 2:
+        print("Warning: Uncertainty plotting is only supported in 2D.")
+        return
+    
+    if lag >= ndim_1d - naug:
+        print("Invalid lag. Maximum lag allowed = window size - 1.")
         return
 
-    mu_x_index = ndim_1d - num_aug_states
-    mu_y_index = - num_aug_states
+    mu_x_index = ndim_1d - naug
+    mu_y_index = - naug
+    X = get_coordinates(transition_model, track, lag)
 
     if markov_approx == 1:
         # add process mean
-        X = np.array([[state.state_vector[0, 0] + state.state_vector[mu_x_index, 0],
-                       state.state_vector[ndim_1d, 0] + state.state_vector[mu_y_index, 0]] for state in track])
-        V = np.array([[state.covar[0, 0] + state.covar[mu_x_index, mu_x_index],
-                       state.covar[ndim_1d, ndim_1d] + state.covar[mu_y_index, mu_y_index]] for state in track])
+        
+        V = np.array([[state.covar[lag, 0] + state.covar[mu_x_index, mu_x_index],
+                       state.covar[ndim_1d + lag, ndim_1d] + state.covar[mu_y_index, mu_y_index]] for state in track])
     else:
-        X = np.array([[state.state_vector[0, 0], state.state_vector[ndim_1d, 0]] for state in track])
-        V = np.array([[state.covar[0, 0], state.covar[ndim_1d, ndim_1d]] for state in track])
+
+        V = np.array([[state.covar[lag, 0], state.covar[ndim_1d + lag, ndim_1d]] for state in track])
     
     # Compute uncertainty radius
     tail_out = (1 - cred_level) / 2
@@ -133,3 +142,23 @@ def add_track_unc_stonesoup(track, transition_model, opacity=0.3, cred_level=0.9
     model_name = transition_model.model_list[0].__class__.__name__
     color = model_colors[model_name]
     plt.gca().add_patch(PathPatch(path, fc=color, alpha=opacity, label='', ls=''))
+
+
+def get_coordinates(transition_model, track, lag):
+    markov_approx, dim, ndim_1d, naug = get_model_properties(transition_model)
+    coords = []
+    for i in range(len(track)):
+        state = track[i]
+        c = []
+        for d in range(1, dim+1):
+            if markov_approx == 1:
+                c.append(state.state_vector[ndim_1d*d-naug] + state.state_vector[ndim_1d*d-naug - (ndim_1d-naug-lag)])
+            else:
+                if i < lag:
+                    # we have fewer values in the statevector than the required lag. it is currently 0. use our least recent value i instead.
+                    c.append(state.state_vector[ndim_1d*(d-1) + i])
+                else:
+                    c.append(state.state_vector[ndim_1d*d-naug - (ndim_1d-naug-lag)])
+        coords.append(c)
+    coords = np.array(coords)  # shape: (N, dim)
+    return coords
