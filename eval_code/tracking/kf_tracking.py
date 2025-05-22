@@ -63,6 +63,62 @@ def kalman_filter(predictor, updater, measurement_model, track, measurements):
     return track, log_lik
 
 
+def kalman_filter_dynamic_hyp(predictor, updater, measurement_model, track, measurements):
+    """Carry out kalman filtering and compute marginal LL recursively."""
+    log_lik = 0
+    H = measurement_model.matrix()
+    Cv = measurement_model.covar()
+   
+    for measurement in measurements[1:]:
+        predicted_state = predictor.predict(track, timestamp=measurement.timestamp)
+        updated_state = updater.update(SingleHypothesis(predicted_state, measurement))
+
+        # Calculate conditional log likelihood
+        m_pred = np.array(predicted_state.state_vector)
+        P_pred = np.array(predicted_state.covar)
+        meas = np.array(measurement.state_vector)
+        S = H @ P_pred @ H.T + Cv
+       
+        log_lik += -0.5 * (np.linalg.slogdet(S)[1] +
+                                      (meas - H @ m_pred).T @ np.linalg.pinv(S) @ (meas - H @ m_pred)).item()
+
+        track.append(updated_state)
+    return track, log_lik
+
+
+def get_positions(transition_model, track, lag=0):
+    markov_approx, dim, ndim_1d, naug = get_model_properties(transition_model)
+    coords = []
+    for i in range(len(track)):
+        state = track[i]
+        c = []
+        for d in range(1, dim+1):
+            if markov_approx == 1:
+                c.append(state.state_vector[ndim_1d*d-naug] + state.state_vector[ndim_1d*d-naug - (ndim_1d-naug-lag)])
+            else:
+                if i < lag:
+                    # we have fewer values in the statevector than the required lag. it is currently 0. use our least recent value i instead.
+                    c.append(state.state_vector[ndim_1d*(d-1) + i])
+                else:
+                    c.append(state.state_vector[ndim_1d*d-naug - (ndim_1d-naug-lag)])
+        coords.append(c)
+    coords = np.array(coords)  # shape: (N, dim)
+    return coords
+
+
+def get_variances(transition_model, track, lag=0):
+    markov_approx, dim, ndim_1d, naug = get_model_properties(transition_model)
+    mu_x_index = ndim_1d - naug
+    mu_y_index = - naug
+
+    if markov_approx == 1:
+        V = np.array([[state.covar[lag, 0] + state.covar[mu_x_index, mu_x_index],
+                       state.covar[ndim_1d + lag, ndim_1d] + state.covar[mu_y_index, mu_y_index]] for state in track])
+    else:
+        V = np.array([[state.covar[lag, 0], state.covar[ndim_1d + lag, ndim_1d]] for state in track])
+    return V
+
+
 def compute_rmse(measurement_model, track, gt: List[np.ndarray]) -> float:
     """
     Compute overall RMSE between the measurement model outputs and ground truth coordinates.

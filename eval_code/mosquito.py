@@ -6,7 +6,7 @@ import setup
 from tracking.models_utils import initialise_transition_model, initialise_measurement_model
 from tracking.tracking_init import (import_ground_truth_coordinates,
                                     simulate_gaussian_measurements)
-from tracking.kf_tracking import perform_tracking
+from tracking.kf_tracking import perform_tracking, get_positions, get_variances
 from tracking.plotting import plot_base, plot_tracks, add_track_unc_stonesoup
 
 from datetime import datetime, timedelta
@@ -17,7 +17,7 @@ import pandas as pd
 # define params
 tracking_models = ["SE", "iSE", "iDSE", "iiSE", "iiDSE"]
 dim = 2
-lag = 10  # for smoothing
+lag = 3  # for smoothing
 
 # import trajectory and hyperparameters
 trajectory_idx = 5
@@ -73,10 +73,13 @@ if __name__ == "__main__":
         track, log_lik, rmse = perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
 
         print(f"{tracking_models[i]:<10} {log_lik:<20.4f} {rmse:<10.7f}")
-        plot_tracks(track, transition_model, measurement_model, lag=lag)
+
+        pos = get_positions(transition_model, track, lag)
+        plot_tracks(transition_model, pos)
 
         if tracking_models[i] in ["SE", "iDSE", "iiDSE"]:
-            add_track_unc_stonesoup(track, transition_model, lag=lag)
+            var = get_variances(transition_model, track, lag)
+            add_track_unc_stonesoup(transition_model, pos, var)
     
     plt.grid(True)
     plt.xlabel("X Position")

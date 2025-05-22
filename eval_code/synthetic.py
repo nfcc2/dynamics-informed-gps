@@ -9,7 +9,7 @@ from tracking.models_utils import initialise_transition_model, initialise_measur
 from tracking.tracking_init import (generate_synthetic_ground_truth,
                                     simulate_gaussian_measurements,
                                     create_prior_state)
-from tracking.kf_tracking import perform_tracking
+from tracking.kf_tracking import perform_tracking, get_positions, get_variances
 from tracking.plotting import plot_base, plot_tracks, add_track_unc_stonesoup
 
 
@@ -89,12 +89,12 @@ if __name__ == "__main__":
         track, log_lik, rmse = perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
 
         print(f"{tracking_models[i]:<10} {log_lik:<20.4f} {rmse:<10.4f}")
-        plot_tracks(track, transition_model, measurement_model)
+        pos = get_positions(transition_model, track)
+        plot_tracks(transition_model, pos)
 
-        # only add uncertainty intervals of one iGP and one iiGP model for clarity. 
-        # the iSE and iDSE have similar shapes, and similarly for the iiSE and iiDSE models
-        if tracking_models[i] == "iDSE" or tracking_models[i] == "iiDSE":
-            add_track_unc_stonesoup(track, transition_model)
+        if tracking_models[i] in ["SE", "iDSE", "iiDSE"]:
+            var = get_variances(transition_model, track)
+            add_track_unc_stonesoup(transition_model, pos, var)
     
     plt.grid(True)
     plt.xlabel("X Position")
