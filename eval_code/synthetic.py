@@ -9,7 +9,7 @@ from tracking.models_utils import initialise_transition_model, initialise_measur
 from tracking.tracking_init import (generate_synthetic_ground_truth,
                                     simulate_gaussian_measurements,
                                     create_prior_state)
-from tracking.kf_tracking import perform_tracking, get_positions, get_variances
+from tracking.kf_tracking import perform_tracking, get_positions, get_variances, compute_rmse
 from tracking.plotting import plot_base, plot_tracks, add_track_unc_stonesoup
 
 
@@ -86,10 +86,12 @@ if __name__ == "__main__":
         model_params_combined = {**common_model_params, **tracking_model_params[generating_model][tracking_models[i]]}
         transition_model = initialise_transition_model(tracking_models[i], dim=dim, **model_params_combined)
         measurement_model = initialise_measurement_model(transition_model, noise_var)
-        track, log_lik, rmse = perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
+        track, log_lik = perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
 
-        print(f"{tracking_models[i]:<10} {log_lik:<20.4f} {rmse:<10.4f}")
         pos = get_positions(transition_model, track)
+        rmse = compute_rmse(gt, pos)
+        print(f"{tracking_models[i]:<10} {log_lik:<20.4f} {rmse:<10.4f}")
+        
         plot_tracks(transition_model, pos)
 
         if tracking_models[i] in ["SE", "iDSE", "iiDSE"]:

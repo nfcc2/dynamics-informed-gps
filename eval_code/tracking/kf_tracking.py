@@ -34,11 +34,8 @@ def perform_tracking(gt, meas, transition_model, measurement_model, time_interva
 
     # Step 5: Run tracking and calculate log likelihood
     track, log_lik = kalman_filter(predictor, updater, measurement_model, track, measurements)
-    
-    # Step 6: Compute rmse
-    rmse = compute_rmse(measurement_model, track, gt)
 
-    return track, log_lik, rmse
+    return track, log_lik
 
 def kalman_filter(predictor, updater, measurement_model, track, measurements):
     """Carry out kalman filtering and compute marginal LL recursively."""
@@ -119,7 +116,7 @@ def get_variances(transition_model, track, lag=0):
     return V
 
 
-def compute_rmse(measurement_model, track, gt: List[np.ndarray]) -> float:
+def compute_rmse(gt, pos, lag=0) -> float:
     """
     Compute overall RMSE between the measurement model outputs and ground truth coordinates.
 
@@ -137,14 +134,14 @@ def compute_rmse(measurement_model, track, gt: List[np.ndarray]) -> float:
     float
         Overall RMSE (sum of MSEs across dimensions).
     """
-    pos = [measurement_model.function(state).flatten() for state in track]
-    pos = np.array(pos).T  # Shape: (dim, N)
+    if np.shape(pos)[1] != len(gt[0]):
+        pos = np.array(pos).T  # Shape: (dim, N)
 
     if pos.shape[0] != len(gt):
         raise ValueError(f"Mismatch between measurement output dimension {pos.shape[0]} and number of ground truth arrays {len(gt)}.")
 
     rmse_components = [
-        mean_squared_error(gt[i], pos[i])
+        mean_squared_error(gt[i][:-lag], pos[i][lag:])
         for i in range(len(gt))
     ]
 

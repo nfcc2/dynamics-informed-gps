@@ -4,7 +4,7 @@ import setup
 
 from tracking.models_utils import initialise_transition_model, initialise_measurement_model
 from tracking.tracking_init import import_ground_truth_coordinates, simulate_gaussian_measurements
-from tracking.kf_tracking import perform_tracking
+from tracking.kf_tracking import perform_tracking, get_positions, compute_rmse
 
 from datetime import datetime, timedelta
 import numpy as np
@@ -12,9 +12,10 @@ import pandas as pd
 import os
 
 # Configuration
-tracking_models = ["SE", "iSE", "iDSE", "iiSE", "iiDSE", "CV"]
+tracking_models = ["SE", "iSE", "iDSE", "iiSE", "iiDSE"]
 dim = 3
-num_trajectories = 5
+lag = 9
+num_trajectories = 1
 num_seeds = 20
 time_interval = timedelta(seconds=0.01)
 noise_sd = 0.01
@@ -28,7 +29,7 @@ common_model_params = {
 
 output_data = []
 
-for trajectory_idx in range(1, num_trajectories + 1):
+for trajectory_idx in range(5, 6):
     print(f"\nProcessing trajectory {trajectory_idx}...")
     trajectory_csv_path = f"trajectories/{trajectory_idx}.csv"
     params_df = pd.read_csv(f"results/best_hyperparams_traj{trajectory_idx}.csv")
@@ -58,7 +59,9 @@ for trajectory_idx in range(1, num_trajectories + 1):
 
             transition_model = initialise_transition_model(model_name, dim=dim, **model_params_combined)
             measurement_model = initialise_measurement_model(transition_model, noise_var)
-            _, _, rmse = perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
+            track, _ = perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
+            pos = get_positions(transition_model, track, lag)
+            rmse = compute_rmse(gt, pos, lag)
             rmses.append(rmse)
 
         avg_rmse = np.mean(rmses)
@@ -72,5 +75,5 @@ for trajectory_idx in range(1, num_trajectories + 1):
 # Save results
 results_df = pd.DataFrame(output_data)
 os.makedirs("results", exist_ok=True)
-results_df.to_csv("results/average_rmse_per_model_per_trajectory.csv", index=False)
+results_df.to_csv("results/average_rmse_per_model_traj5_lag9csv", index=False)
 print("\nSaved RMSE results to results/average_rmse_per_model_per_trajectory.csv")
