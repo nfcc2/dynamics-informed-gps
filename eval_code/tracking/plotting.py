@@ -10,7 +10,7 @@ from scipy.stats import norm
 
 
 model_abbreviations = {
-    "SlidingWindowGP": "SE",
+    "SimpleMarkovianGP": "SE",
     "IntegratedGP": "iSE",
     "TwiceIntegratedGP": "iiSE",
     "DynamicsInformedIntegratedGP": "iDSE",
@@ -18,7 +18,7 @@ model_abbreviations = {
 }
 
 model_colors = {
-    "SlidingWindowGP": "salmon", 
+    "SimpleMarkovianGP": "salmon", 
     "IntegratedGP": "mediumorchid", 
     "TwiceIntegratedGP": "green", 
     "DynamicsInformedIntegratedGP": "gold", 
