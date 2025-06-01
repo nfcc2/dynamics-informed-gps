@@ -4,8 +4,7 @@ from stonesoup.base import Property
 from stonesoup.models.transition.linear import (
     CombinedLinearGaussianTransitionModel,
     SimpleMarkovianGP, IntegratedGP, TwiceIntegratedGP, 
-    DynamicsInformedIntegratedGP, DynamicsInformedTwiceIntegratedGP,
-    ConstantVelocity
+    DynamicsInformedIntegratedGP, DynamicsInformedTwiceIntegratedGP
 )
 from stonesoup.models.measurement.linear import LinearGaussian
 
