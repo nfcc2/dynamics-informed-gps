@@ -14,7 +14,7 @@ from scipy.stats import norm
 
 
 model_abbreviations = {
-    "SlidingWindowGP": "SE",
+    "SimpleMarkovianGP": "SE",
     "IntegratedGP": "iSE",
     "TwiceIntegratedGP": "iiSE",
     "DynamicsInformedIntegratedGP": "iDSE",
@@ -23,7 +23,7 @@ model_abbreviations = {
 }
 
 model_colors = {
-    "SlidingWindowGP": "salmon", 
+    "SimpleMarkovianGP": "salmon", 
     "IntegratedGP": "mediumorchid", 
     "TwiceIntegratedGP": "green", 
     "DynamicsInformedIntegratedGP": "gold", 
@@ -85,7 +85,7 @@ def add_track_unc_stonesoup(transition_model, positions, variances, opacity=0.3,
         print("Warning: Uncertainty plotting is only supported in 2D.")
         return
 
-    X = positions
+    X = positions.T
     V = variances
     
     # Compute uncertainty radius

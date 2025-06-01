@@ -3,7 +3,7 @@
 from stonesoup.base import Property
 from stonesoup.models.transition.linear import (
     CombinedLinearGaussianTransitionModel,
-    SlidingWindowGP, IntegratedGP, TwiceIntegratedGP, 
+    SimpleMarkovianGP, IntegratedGP, TwiceIntegratedGP, 
     DynamicsInformedIntegratedGP, DynamicsInformedTwiceIntegratedGP,
     ConstantVelocity
 )
@@ -30,7 +30,7 @@ class LinearGaussianAugmented(LinearGaussian):
 
 # Dictionary to map string names to Stone Soup classes
 MODEL_CLASSES = {
-    "SE": SlidingWindowGP,
+    "SE": SimpleMarkovianGP,
     "iSE": IntegratedGP,
     "iiSE": TwiceIntegratedGP,
     "iDSE": DynamicsInformedIntegratedGP,
@@ -129,7 +129,7 @@ def get_model_properties(transition_model) -> Tuple[int, int, int, int]:
 
     num_aug_states = ndim_1d - transition_model_1d.window_size
 
-    if transition_model_1d.__class__.__name__ == "SlidingWindowGP":
+    if transition_model_1d.__class__.__name__ == "SimpleMarkovianGP":
         markov_approx = 0
     else:
         markov_approx = transition_model_1d.markov_approx
