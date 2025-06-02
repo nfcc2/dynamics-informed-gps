@@ -9,18 +9,23 @@ from tracking.models_utils import initialise_transition_model, initialise_measur
 from tracking.tracking_init import (generate_synthetic_ground_truth,
                                     simulate_gaussian_measurements,
                                     create_prior_state)
-from tracking.kf_tracking import perform_tracking, get_positions, get_variances, compute_rmse
+from tracking.kf_tracking import perform_tracking, get_positions, get_variances, compute_rmse, kalman_filter
 from tracking.plotting import plot_base, plot_tracks, add_track_unc_stonesoup
+
+from stonesoup.predictor.kalman import KalmanPredictor
+from stonesoup.models.transition.linear import SimpleMarkovianGP, IntegratedGP
 
 
 from datetime import datetime, timedelta
 import numpy as np
 import matplotlib.pyplot as plt
 
+from line_profiler import LineProfiler
+
 # define params
 generating_model = "iDSE"
-tracking_models = ["iSE", "iDSE", "iiSE", "iiDSE"]
-dim = 3  # number of dimensions
+tracking_models = ["iSE"]
+dim = 1  # number of dimensions
 
 time_interval = timedelta(seconds=0.1)
 num_steps = 100
@@ -76,32 +81,51 @@ if __name__ == "__main__":
     gt = generate_synthetic_ground_truth(transition_model_gen, prior, num_steps, time_interval)
     meas = simulate_gaussian_measurements(gt, noise_sd)
     # Plot ground truth and measurements
-    plot_base(gt, meas)
+    # plot_base(gt, meas)
 
     # Carry out tracking, plot tracks with uncertainty intervals for each model
     print(f"{'Model':<10} {'Log Likelihood':<20} {'RMSE':<10}")
     print("="*40) 
 
+    common_model_params = {
+    "window_size": 10,
+    "markov_approx": 2,
+    "prior_var": noise_var
+}
+
     for i in range(len(tracking_models)):
         model_params_combined = {**common_model_params, **tracking_model_params[generating_model][tracking_models[i]]}
         transition_model = initialise_transition_model(tracking_models[i], dim=dim, **model_params_combined)
         measurement_model = initialise_measurement_model(transition_model, noise_var)
-        track, log_lik = perform_tracking(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
+
+        lp = LineProfiler()
+        # lp.add_function(kalman_filter)
+        lp.add_function(KalmanPredictor.predict)
+        # lp.add_function(KalmanPredictor._transition_function)
+        lp.add_function(SimpleMarkovianGP.matrix)
+        lp.add_function(SimpleMarkovianGP.covar)
+        # lp.add_function(SimpleMarkovianGP.conditional_gaussian_pred)
+        lp.add_function(SimpleMarkovianGP._conditional_gaussian_pred.__wrapped__)
+        lp.add_function(IntegratedGP._scalar_kernel.__wrapped__)
+        lp.add_function(kalman_filter)
+        lp_wrapper = lp(perform_tracking)
+        track, log_lik = lp_wrapper(gt, meas, transition_model, measurement_model, time_interval, prior_var=noise_var)
+        lp.print_stats()
 
         pos = get_positions(transition_model, track)
         rmse = compute_rmse(gt, pos)
         print(f"{tracking_models[i]:<10} {log_lik:<20.4f} {rmse:<10.4f}")
         
-        plot_tracks(transition_model, pos)
+    #     plot_tracks(transition_model, pos)
 
-        if tracking_models[i] in ["SE", "iDSE", "iiDSE"]:
-            var = get_variances(transition_model, track)
-            add_track_unc_stonesoup(transition_model, pos, var)
+    #     if tracking_models[i] in ["SE", "iDSE", "iiDSE"]:
+    #         var = get_variances(transition_model, track)
+    #         add_track_unc_stonesoup(transition_model, pos, var)
     
-    plt.grid(True)
-    plt.xlabel("X Position")
-    plt.ylabel("Y Position")
-    plt.legend()
-    plt.show()
+    # plt.grid(True)
+    # plt.xlabel("X Position")
+    # plt.ylabel("Y Position")
+    # plt.legend()
+    # plt.show()
 
 
