@@ -18,17 +18,13 @@ def import_ground_truth_coordinates(file_path):
     return gt_x, gt_y
 
 
-def generate_synthetic_ground_truth(transition_model, prior, num_steps, time_interval):
+def generate_synthetic_ground_truth(transition_model, measurement_model, prior, num_steps, time_interval):
     """Generate synthetic path using given GP transition model."""
     truth = GroundTruthPath(prior)
     start_time = prior.timestamp
     ndim_1d = transition_model.model_list[0].ndim_state
-    gt_x = []
-    gt_y = []
-    
+
     for t in range(1, num_steps+1):
-        gt_x.append(prior.state_vector[0])
-        gt_y.append(prior.state_vector[ndim_1d])
         covar = transition_model.covar(track=truth, time_interval=time_interval)
         noise = multivariate_normal.rvs(np.zeros(ndim_1d * 2), covar)
         noise = np.atleast_2d(noise).T
@@ -36,7 +32,14 @@ def generate_synthetic_ground_truth(transition_model, prior, num_steps, time_int
         truth.append(GroundTruthState(next_state, timestamp=start_time + t * time_interval))
         prior = truth[-1]
 
-    return (gt_x, gt_y)
+    pos = [measurement_model.function(state) for state in truth]
+    x_vals = []
+    y_vals = []
+    for state in pos:
+        x_vals.append(state[0])
+        y_vals.append(state[1])
+
+    return (x_vals, y_vals)
 
 
 def simulate_gaussian_measurements(gt_x, gt_y, sd):
