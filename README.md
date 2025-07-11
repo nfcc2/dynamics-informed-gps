@@ -45,11 +45,17 @@ pip install -r requirements.txt
 
 ### Running the IGP Tutorial
 
-To explore how to use the IGP models within the Stone Soup framework, open the tutorial notebook:
+To run the tutorial in VS Code:
+
+1. Open `iGP_tutorial.ipynb` in VS Code.
+2. Ensure the Jupyter and Python extensions are installed.
+3. Select the correct interpreter (Cmd/Ctrl+Shift+P → "Python: Select Interpreter").
+4. Run cells using the ▶️ buttons.
+
+If the environment doesn’t show up, register it with:
 
 ```bash
-jupyter notebook iGP_tutorial.ipynb
-```
+python -m ipykernel install --user --name=env
 
 ### Running Synthetic Data Evaluation
 Replicates Figure 2, visualising an example trajectory from a generating model, along with estimated tracks from tracking models.
